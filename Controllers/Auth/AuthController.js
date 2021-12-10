@@ -3,10 +3,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 
-const Donor = require("../../Models/Donor");
-const Store = require("../../Models/Store");
+const User = require("../../Models/Users");
 
-const nodemailer = require('../../services/nodemailer')
+const nodemailer = require('../../services/nodemailer');
+const { add } = require("lodash");
 
 const SaltRound = 10;
 
@@ -15,178 +15,133 @@ exports.Register = async (req, res) => {
         
         console.log(req.body)
         const { email, password, type } = req.body;
-        if(type === 'Donor'){
-            const user = await Donor.findOne({ email })
+        
+            const user = await User.findOne({ email })
             // 422 If resource already exists.
             if (!user) {
-                const newUser = new Donor({ email, password });
+                const newUser = new User({ email, password, accountType:type });
                 const salt = await bcrypt.genSalt(SaltRound);
                 newUser.password = await bcrypt.hash(password, salt);
                 const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
                 newUser.verificationCode = token;
                 await newUser.save();
                 nodemailer.sendVerificationMail(newUser.email, token);
-                return res.status(200).json({ message: 'Account Registered! Please verify your email' });
+                return res.status(200).json({success:true, message: 'Account Registered! Please verify your email' });
             }
             else{
-               res.status(400).send({ message: "Email already exists!" });
+               res.status(400).send({ success:false, message: "Email already exists!" });
             }
-        }
-        else if(type === 'Store'){
-            const user = await Store.findOne({ email })
-            // 422 If resource already exists.
-            if (!user) {
-                const newUser = new Store({ email, password });
-                const salt = await bcrypt.genSalt(SaltRound);
-                newUser.password = await bcrypt.hash(password, salt);
-                const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
-                newUser.verificationCode = token;
-                await newUser.save();
-                nodemailer.sendVerificationMail(newUser.email, token);
-                return res.status(200).json({ message: 'Account Registered! Please verify your email' });
-            }
-            else{
-               res.status(400).send({ message: "Email already exists!" });
-            }
-        }
-        
-        
     } catch (error) {
-        return res.status(500).json({ message: 'Internal server error!' })
+        console.log(error)
+        return res.status(500).json({ success:false, message: 'Internal server error!' })
     }
 }
 
 
 exports.Login = async (req, res) => {
-    let {type} = req.body;
-
-    if(type === 'Donor'){
-        let { name, email, password, landmark, address, city, pincode, phone } = req.body;
+   
+        let { email, password} = req.body;
         email = email.toLowerCase();
-        let FoundUser = await Donor.findOne({ email });
+        let FoundUser = await User.findOne({ email });
         if (FoundUser) {
+
+            if(!FoundUser.isVerified) return res.status(201).send({ message: 'Please verify your email first then login!' });
+
             if(bcrypt.compareSync(password, FoundUser.password)){
+                const token = jwt.sign({ id: FoundUser._id, accountType: FoundUser.accountType, email:FoundUser.email }, process.env.JWT_SECRET, {
+                    expiresIn: 86400,
+                  })
     
                 if(FoundUser?.landmark?.length === 0 || FoundUser?.landmark === undefined){
-                    FoundUser.name = name
-                    FoundUser.contact = phone
-                    FoundUser.landmark = landmark
-                    FoundUser.address = address
-                    FoundUser.city = city
-                    FoundUser.pincode = pincode
-                    await FoundUser.save()
-                    const token = jwt.sign({ id: FoundUser._id, accountType:'DONOR' }, process.env.JWT_SECRET, {
-                        expiresIn: 86400,
-                      })
+                   
+                   
                 
-                      res.status(200).send({Message:"Details Added Successfully",
+                      res.status(200).send({
+                        success:true,  
+                        Message:"Logged In!",
                         Authorization: token,
-                        type:"DONOR"
+                        type:FoundUser.accountType,
+                        isFirstLogin:true
                       })
                 }
                 else{
-                    const token = jwt.sign({ id: FoundUser._id }, process.env.JWT_SECRET, {
-                        expiresIn: 86400,
-                      })
-                
-                      res.status(200).send({Message:"Logged In!",
+                      res.status(200).send({
+                        success:true,  
+                        Message:"Logged In!",
                         Authorization: token,
-                        type:"DONOR"
+                        type:FoundUser.accountType,
+                        isFirstLogin:false
                       })
                 }
             }
                  else {
                     return res
                         .status(400)
-                        .send({ message: "Password Did not Match,please try again" });
+                        .send({ success:false, message: "Password Did not Match,please try again" });
                 }
             
         }  else {
                 return res
                     .status(400)
-                    .send({ message: "No user with this email was found" });
+                    .send({ success:false, message: "No user with this email was found" });
             }
-    }
-    else if(type === 'Store'){
-        let {  email, password, landmark, address, city, pincode, phone, storeName, storeOwner } = req.body;
-        email = email.toLowerCase();
-        let FoundUser = await Store.findOne({ email });
-        if (FoundUser) {
-            if(bcrypt.compareSync(password, FoundUser.password)){
     
-                if(FoundUser?.landmark?.length === 0 || FoundUser?.landmark === undefined){
-                    FoundUser.contact = phone
-                    FoundUser.storeName = storeName
-                    FoundUser.storeOwner = storeOwner
-                    FoundUser.landmark = landmark
-                    FoundUser.address = address
-                    FoundUser.city = city
-                    FoundUser.pincode = pincode
-                    await FoundUser.save()
-                    const token = jwt.sign({ id: FoundUser._id, accountType: 'STORE' }, process.env.JWT_SECRET, {
-                        expiresIn: 86400,
-                      })
-                
-                      res.status(200).send({Message:"Details Added Successfully",
-                        Authorization: token,
-                        type: "STORE"
-                      })
-                }
-                else{
-                    const token = jwt.sign({ id: FoundUser._id }, process.env.JWT_SECRET, {
-                        expiresIn: 86400,
-                      })
-                
-                      res.status(200).send({Message:"Logged In!",
-                        Authorization: token,
-                        type:"STORE"
-                      })
-                }
-            }
-                 else {
-                    return res
-                        .status(400)
-                        .send({ message: "Password Did not Match,please try again" });
-                }
-            
-        }  else {
-                return res
-                    .status(400)
-                    .send({ message: "No user with this email was found" });
-            }
-    }
+}
 
+exports.addDetails = async (req,res) => {
+    let {ownerName, storeName, name, phone, landmark, city, address, pincode} = req.body
+
+    const _id = req.user_id;
+    
+    const user = await User.findOne({_id})
+
+    if(user){
+        if(user.accountType === "Store"){
+            user.contact = phone
+            user.landmark = landmark
+            user.storeName = storeName
+            user.ownerName = ownerName
+            user.city = city
+            user.address = address
+            user.pincode = pincode
+            await user.save()
+            return res.status(200).send({success:true, message:"Details added successfully"})
+        }
+        else if(user.accountType === "Donor"){
+            user.contact = phone
+            user.landmark = landmark
+            user.name = name
+            user.city = city
+            user.address = address
+            user.pincode = pincode
+            await user.save()
+            return res.status(200).send({success:true, message:"Details added successfully"})
+        }
+        else{
+            return res.status(404).send({success:false, message:"User type does not exists"})
+        }
+        
+    }
 }
 
 module.exports.verify = async (req,res) => {
     try {
         
-        const donor = await Donor.findOne({
+        const user = await User.findOne({
             verificationCode: req.params.token
         });
-        if (!donor){
-            const store = await Store.findOne({
-                verificationCode: req.params.token
-            })
-
-            if(store){       
-                store.isVerified = true;
-                await store.save()
-                return res.status(200).send({ message: "Confirmed" });
-            }
-            else{
-                return res.status(404).send({ message: "User doesn't exist!!" });
-            }
-     
+        if (!user){
+            return res.status(404).send({ message: "User doesn't exist!!" });     
         }
         else{
-            donor.isVerified = true;
-            await donor.save();
+            user.isVerified = true;
+            await user.save();
             return res.status(200).send({ message: "Confirmed" });
         }
         
        
     } catch (error) {
+        console.log(error)
         res.status(500).send({ message: "Internal server error " });
     }
 }
