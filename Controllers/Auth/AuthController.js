@@ -4,9 +4,12 @@ const bcrypt = require("bcryptjs");
 
 
 const User = require("../../Models/Users");
+const Store = require("../../Models/Store");
+const Donor = require("../../Models/Donor");
 
+const {maps} = require("../../services/maps");
 const nodemailer = require('../../services/nodemailer');
-const { add } = require("lodash");
+
 
 const SaltRound = 10;
 
@@ -89,7 +92,7 @@ exports.Login = async (req, res) => {
 }
 
 exports.addDetails = async (req,res) => {
-    let {ownerName, storeName, name, phone, landmark, city, address, pincode} = req.body
+    let {storeOwner, storeName, name, phone, landmark, city, address, pincode, bloodGroup} = req.body
 
     const _id = req.user_id;
     
@@ -100,20 +103,44 @@ exports.addDetails = async (req,res) => {
             user.contact = phone
             user.landmark = landmark
             user.storeName = storeName
-            user.ownerName = ownerName
+            user.storeOwner = storeOwner
             user.city = city
             user.address = address
             user.pincode = pincode
+
+            const data = await maps(address, landmark, city, pincode);
+            
+
+            if(data){
+                const {lat,lng} = data?.items[0]?.position
+                if(lat && lng){
+                    const store = new Store({storeId:_id, lat, lng})
+                    await store.save()
+                }
+                
+            }
             await user.save()
             return res.status(200).send({success:true, message:"Details added successfully"})
         }
         else if(user.accountType === "Donor"){
             user.contact = phone
             user.landmark = landmark
-            user.name = name
+            user.donorName = name
             user.city = city
             user.address = address
             user.pincode = pincode
+
+            const data = await maps(address, landmark, city, pincode);
+            
+            if(data){
+                const {lat,lng} = data?.items[0]?.position
+                if(lat && lng){
+                    const donor = new Donor({donorId:user._id, lat, lng, bloodGroup})
+                    await donor.save()
+                }
+               
+            }
+            
             await user.save()
             return res.status(200).send({success:true, message:"Details added successfully"})
         }
@@ -123,6 +150,7 @@ exports.addDetails = async (req,res) => {
         
     }
 }
+
 
 module.exports.verify = async (req,res) => {
     try {

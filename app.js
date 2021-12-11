@@ -20,9 +20,19 @@ app.use(function (req, res, next) {
 });
 
 // Routes
-const authRoutes = require("./Routes/authRoutes")
+const authRoutes = require("./Routes/authRoutes");
+const storeRoutes = require("./Routes/storeRoutes");
+const donorRoute = require("./Routes/donorRoute");
+const { maps } = require("./services/maps.js");
+
+app.get("/maps",async (req,res)=>{
+const data = await maps("F-4/ Bhanujit Apartment", "Vijay Dalwada Center", "Ahmedabad", 380022);
+res.send(data.items[0].position);
+})
 
 app.use("/auth", authRoutes);
+app.use("/store", storeRoutes);
+app.use("/donor", donorRoute);
 
 
 
