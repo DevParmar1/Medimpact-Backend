@@ -13,6 +13,7 @@ const authMiddleware = async (req, res, next) => {
         else {
         console.log(decodedToken)
           req.user_id = decodedToken.id
+          req.accountType = decodedToken.accountType
           next()
         }
       })
@@ -23,7 +24,11 @@ const authMiddleware = async (req, res, next) => {
 
 
   } catch (error) {
+    console.log(error)
      return res.status(403).send({success:false, message: 'Login attempt failed' })
   }
 }
+
+
+
 module.exports = {authMiddleware}

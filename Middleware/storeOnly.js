@@ -5,7 +5,7 @@ function storeOnly(req, res, next) {
     let isAllowed = false
 
      if (req.originalUrl.match('/store')) {
-        isAllowed = accountType==="STORE"?true:false
+        isAllowed = accountType==="Store"?true:false
     }
 
     if (isAllowed) {

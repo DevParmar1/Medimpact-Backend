@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const UserSchema = Schema({
-	name: { type: String },
+	donorName: { type: String },
+	storeName: {type:String},
+	storeOwner: {type:String},
 	email: { type: String, required: true, unique: true },
 	contact: { type: Number },
 	DOB: { type: Date },
@@ -10,7 +12,10 @@ const UserSchema = Schema({
 	address: { type: String },
     pincode:{ type: Number},
 	city: { type: String },
+	country:{type:String, default:"India"},
 	password: { type: String, required: true },
+	latitude:{ type:Number},
+	longitude:{ type:Number },
 	ProfilePic: { type: String },
 	isBlocked: { type: Boolean }, 
 	isVerified: { type: Boolean, default:false},
