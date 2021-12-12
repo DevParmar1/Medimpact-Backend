@@ -92,7 +92,7 @@ exports.Login = async (req, res) => {
 }
 
 exports.addDetails = async (req,res) => {
-    let {storeOwner, storeName, name, phone, landmark, city, address, pincode, bloodGroup} = req.body
+    let {ownerName, storeName, name, phone, landmark, city, address, pincode, bloodGroup} = req.body
 
     const _id = req.user_id;
     
@@ -103,7 +103,7 @@ exports.addDetails = async (req,res) => {
             user.contact = phone
             user.landmark = landmark
             user.storeName = storeName
-            user.storeOwner = storeOwner
+            user.storeOwner = ownerName
             user.city = city
             user.address = address
             user.pincode = pincode
