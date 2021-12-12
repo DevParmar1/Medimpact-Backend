@@ -3,7 +3,6 @@ require("./DB/mongoConnect.js");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const axios = require("axios");
 
 // Configuring app
 const app = express();
@@ -23,12 +22,15 @@ app.use(function (req, res, next) {
 const authRoutes = require("./Routes/authRoutes");
 const storeRoutes = require("./Routes/storeRoutes");
 const donorRoute = require("./Routes/donorRoute");
+const {Subscribe} = require("./Controllers/Subscription/SubscriberController")
 const { maps } = require("./services/maps.js");
 
 app.get("/maps",async (req,res)=>{
 const data = await maps("F-4/ Bhanujit Apartment", "Vijay Dalwada Center", "Ahmedabad", 380022);
 res.send(data.items[0].position);
 })
+
+app.post("/subscribe",Subscribe);
 
 app.use("/auth", authRoutes);
 app.use("/store", storeRoutes);

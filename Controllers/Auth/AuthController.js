@@ -57,14 +57,13 @@ exports.Login = async (req, res) => {
     
                 if(FoundUser?.landmark?.length === 0 || FoundUser?.landmark === undefined){
                    
-                   
-                
                       res.status(200).send({
                         success:true,  
                         Message:"Logged In!",
                         Authorization: token,
                         type:FoundUser.accountType,
-                        isFirstLogin:true
+                        isFirstLogin:true,
+                        data:FoundUser
                       })
                 }
                 else{
@@ -73,7 +72,8 @@ exports.Login = async (req, res) => {
                         Message:"Logged In!",
                         Authorization: token,
                         type:FoundUser.accountType,
-                        isFirstLogin:false
+                        isFirstLogin:false,
+                        data:FoundUser
                       })
                 }
             }
